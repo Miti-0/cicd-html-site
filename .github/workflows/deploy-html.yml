@@ -9,34 +9,34 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Validate index.html exists
         run: test -f index.html
 
-      - name: Configure SSH key
+      - name: Configure SSH and sync to /var/www/cicd-html/
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          {
-            cat ~/.ssh/known_hosts 2>/dev/null
-            ssh-keyscan -T 5 -p 2222 "${{ secrets.SSH_HOST }}"
-          } | sort -u > ~/.ssh/known_hosts.tmp
-          mv ~/.ssh/known_hosts.tmp ~/.ssh/known_hosts
+          ssh-keyscan -T 5 -H "$SSH_HOST" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
-
-      - name: Sync files to Nginx web root
-        run: |
           rsync -avz --delete \
             --exclude '.git/' \
             --exclude '.github/' \
-            -e "ssh -p 2222 -i ~/.ssh/id_ed25519" \
-            ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/cicd-html/"
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes" \
+            ./ "$SSH_USER@$SSH_HOST:/var/www/cicd-html/"
 
-      - name: Validate and reload Nginx
+      - name: Validate Nginx config and reload
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
-          ssh -p 2222 -i ~/.ssh/id_ed25519 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+          ssh -i ~/.ssh/id_ed25519 "$SSH_USER@$SSH_HOST" \
             "sudo nginx -t && sudo systemctl reload nginx"
