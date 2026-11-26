@@ -21,7 +21,7 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -p 2222 -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Sync files to Nginx web root
@@ -29,10 +29,10 @@ jobs:
           rsync -avz --delete \
             --exclude '.git/' \
             --exclude '.github/' \
-            -e "ssh -i ~/.ssh/id_ed25519" \
+            -e "ssh -p 2222 -i ~/.ssh/id_ed25519" \
             ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/cicd-html/"
 
       - name: Validate and reload Nginx
         run: |
-          ssh -i ~/.ssh/id_ed25519 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+          ssh -p 2222 -i ~/.ssh/id_ed25519 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             "sudo nginx -t && sudo systemctl reload nginx"
