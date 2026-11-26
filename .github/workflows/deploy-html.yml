@@ -21,7 +21,11 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -T 5 -p 2222 -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          {
+            cat ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -T 5 -p 2222 "${{ secrets.SSH_HOST }}"
+          } | sort -u > ~/.ssh/known_hosts.tmp
+          mv ~/.ssh/known_hosts.tmp ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Sync files to Nginx web root
