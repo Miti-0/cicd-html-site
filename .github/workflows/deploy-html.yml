@@ -15,13 +15,16 @@ jobs:
       - name: Validate index.html exists
         run: test -f index.html
 
-      - name: Sync files to /var/www/cicd-html/
+      - name: Sync files using secret target directory
+        env:
+          DEPLOY_WEB_DIR: ${{ secrets.DEPLOY_WEB_DIR }}
         run: |
+          test -n "$DEPLOY_WEB_DIR"
           rsync -av --delete \
             --exclude '.git/' \
             --exclude '.github/' \
             --exclude 'actions-runner/' \
-            ./ /var/www/cicd-html/
+            ./ "$DEPLOY_WEB_DIR/"
 
       - name: Validate Nginx config and reload
         run: sudo nginx -t && sudo systemctl reload nginx
