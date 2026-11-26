@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -15,16 +15,7 @@ jobs:
       - name: Validate index.html exists
         run: test -f index.html
 
-      - name: Sync files using secret target directory
+      - name: Use DEPLOY_WEB_DIR secret
         env:
           DEPLOY_WEB_DIR: ${{ secrets.DEPLOY_WEB_DIR }}
-        run: |
-          test -n "$DEPLOY_WEB_DIR"
-          rsync -av --delete \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude 'actions-runner/' \
-            ./ "$DEPLOY_WEB_DIR/"
-
-      - name: Validate Nginx config and reload
-        run: sudo nginx -t && sudo systemctl reload nginx
+        run: test -n "$DEPLOY_WEB_DIR"
